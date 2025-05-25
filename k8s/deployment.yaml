@@ -21,7 +21,7 @@ spec:
           imagePullPolicy: Never   # to use local image
           ports:
             - containerPort: 8000   # As defined in server.js
-            env:
+          env:
             - name: PORT
               value: "8000"
             - name: APP_MESSAGE
