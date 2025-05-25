@@ -1,8 +1,10 @@
 # Architecture Overview
 
-This document outlines the high-level architecture of the `senior-devops-tech-test` project, focusing on its components and their interactions within a Continuous Integration/Continuous Deployment (CI/CD) context.
+This document outlines the high-level architecture of the `car_trawler_assessment` project, focusing on its components and their interactions within a Continuous Integration/Continuous Deployment (CI/CD) context.
 
 ## 1. High-Level Architecture Diagram
+
+
 
 ```plantuml
 
