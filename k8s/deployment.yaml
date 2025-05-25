@@ -34,15 +34,15 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: api_key
-            readinessProbe:   # Ensures the pod is ready to serve traffic
-              httpGet:
-                path: /
-                port: 8000
-              initialDelaySeconds: 5
-              periodSeconds: 10
-            livenessProbe:   # Ensures the application is running healthily
-              httpGet:
-                path: /
-                port: 8000
-              initialDelaySeconds: 15
-              periodSeconds: 20
+          readinessProbe:   # Ensures the pod is ready to serve traffic
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:   # Ensures the application is running healthily
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
