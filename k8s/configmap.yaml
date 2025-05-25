@@ -6,4 +6,3 @@ metadata:
 data:
   app_message: "Hello from the Node.js app running on Kubernetes!"
   environment: "development"
-  

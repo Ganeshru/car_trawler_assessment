@@ -6,7 +6,7 @@ metadata:
   labels:
     app: sample-node-app
 spec:
-  replicas: 1 # For minikube, 1 replica is sufficient
+  replicas: 1   # For minikube, 1 replica is sufficient
   selector:
     matchLabels:
       app: sample-node-app
