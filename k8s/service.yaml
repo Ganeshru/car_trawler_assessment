@@ -6,11 +6,11 @@ metadata:
   labels:
     app: sample-node-app
 spec:
-  type: NodePort # Use NodePort for easy access in minikube
+  type: NodePort   # Use NodePort for easy access in minikube
   selector:
     app: sample-node-app
   ports:
     - protocol: TCP
-      port: 80 # Service port
-      targetPort: 8000 # Container port
-      
+      port: 80   # Service port
+      targetPort: 8000   # Container port
+

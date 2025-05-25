@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: sample-node-app-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: / 
+    nginx.ingress.kubernetes.io/rewrite-target: /
     # Required for minikube ingress controller
 spec:
   rules:
@@ -19,4 +19,3 @@ spec:
             name: sample-node-app-service
             port:
               number: 80
-              
