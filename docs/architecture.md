@@ -3,6 +3,7 @@
 This document outlines the high-level architecture of the `car_trawler_assessment` project, focusing on its components and their interactions within a Continuous Integration/Continuous Deployment (CI/CD) context.
 
 ## 1. High-Level Architecture Diagram
+![image](https://github.com/user-attachments/assets/d3227cc8-afbd-43c0-81db-d0485b0adb1a)
 
 
 
