@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  app_message: "Hello from the Node.js app running on Kubernetes!"
+  environment: "development"
+  

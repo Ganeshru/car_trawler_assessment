@@ -1,0 +1,11 @@
+controller:
+  containerSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    allowPrivilegeEscalation: true # This is crucial for root, but also extremely risky
+    # Add other necessary securityContext options if they are present and you want to override them
+  # Alternatively, if it's 'securityContext' at the pod level:
+  # securityContext:
+  #   runAsUser: 0
+  #   runAsGroup: 0
+  #   allowPrivilegeEscalation: true

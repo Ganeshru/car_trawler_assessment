@@ -1,0 +1,54 @@
+# jenkins-values.yaml
+
+controller:
+  serviceType: NodePort
+  jenkinsUrl: http://localhost:8080 
+
+  # This is the critical section you need to ensure is present and correct
+  securityContext:
+    # Explicitly set runAsUser and fsGroup to 0 (root)
+    runAsUser: 0
+    fsGroup: 0 
+    # You might want to remove or comment out these if they are causing issues,
+    # or ensure they don't conflict with root access if you explicitly need it for debugging.
+    # allowPrivilegeEscalation: false 
+    # readOnlyRootFilesystem: false # Set to false if you need to write to rootfs (generally not recommended)
+
+  persistence:
+    enabled: true
+    storageClass: standard 
+    size: 10Gi 
+
+  jenkins:
+    installPlugins:
+      - kubernetes:1.31.0
+      - workflow-job:1287.v81b_a_7366434c
+      - credentials-binding:648.v76c66d2b_b_b_0c
+      - git:5.2.0
+      - pipeline-github-lib:709.v4f0f188ce604
+      - configuration-as-code:1670.v5666f7ee1352
+      - slack:691.693.v34e6e65a_a_c51
+      - email-ext:2.107.0
+    securityRealm: unsecured # WARNING: HIGHLY INSECURE. ONLY FOR LOCAL DEV.
+
+  # Your agent podTemplates configuration (already correct for agents)
+  podTemplates:
+    - name: default
+      label: jenkins-agent
+      containers:
+        - name: jnlp
+          image: jenkins/jnlp-agent:latest
+          args: '${computer.jnlpmac} ${computer.name}'
+          ttyEnabled: true
+          privileged: true 
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Directory
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0

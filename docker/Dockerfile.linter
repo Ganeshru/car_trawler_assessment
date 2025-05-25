@@ -1,0 +1,50 @@
+# Use a slim Debian-based Python image as the base
+FROM python:3.9-slim-buster
+
+# Set environment variables to prevent interactive prompts during apt installs
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Switch to root user to perform installations
+USER root
+
+# Update package lists and install necessary dependencies for yamllint and kubeval
+# - curl: for downloading kubeval
+# - gnupg: for apt key management (though not strictly needed for yamllint/kubeval directly, good for general apt)
+# - jq: for processing JSON, often useful with Kubernetes tools, and sometimes a dependency for kubeval setup scripts
+# - ca-certificates: for secure connections
+# - build-essential: for compiling some Python packages if needed (yamllint usually doesn't, but good to have)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gnupg \
+        jq \
+        ca-certificates \
+        build-essential \
+	git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install yamllint using pip
+# Ensure pip is up-to-date
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir yamllint
+
+# Install kubeval
+# Download the latest kubeval binary for Linux AMD64
+# Extract it and move it to a directory in the PATH
+# Clean up the downloaded archive
+RUN curl -LO https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz \
+    && tar -xzf kubeval-linux-amd64.tar.gz \
+    && mv kubeval /usr/local/bin/kubeval \
+    && rm kubeval-linux-amd64.tar.gz
+
+# Verify installations (optional, but good for debugging)
+RUN yamllint --version
+RUN kubeval --version
+
+# Set the working directory (optional)
+WORKDIR /app
+
+# Restore to a non-root user if you plan to run commands as a less privileged user.
+# For CI/CD tools like linters, root is often acceptable, but it's good practice.
+# If you don't need a specific user, you can omit this.
+# USER 1000 # Example: switch to a non-root user if one exists or is created

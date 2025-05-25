@@ -1,0 +1,55 @@
+# Dockerfile.jenkins-agent
+# (Assumes jenkins/inbound-agent:latest is Debian-based)
+FROM jenkins/inbound-agent:latest
+
+USER root
+
+# Install Docker CLI
+# These commands are for Debian/Ubuntu based systems
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+RUN echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+RUN apt-get update && apt-get install -y docker-ce-cli
+
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && rm kubectl
+
+# Install Minikube CLI (assuming amd64 architecture)
+RUN curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+    && install minikube-linux-amd64 /usr/local/bin/minikube \
+    && rm minikube-linux-amd64
+
+# Install Node.js and npm (for your 'app' directory tests)
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs
+
+# --- NEW LINES TO FIX DOCKER PERMISSIONS ---
+# Create a 'docker' group in the container with the *same GID as on the host*.
+# IMPORTANT: Replace 999 with the GID you found in Step 1!
+RUN groupadd -g 999 docker || true
+
+# Add the 'jenkins' user (which jenkins/inbound-agent creates) to this 'docker' group.
+RUN usermod -aG docker jenkins
+# --- END NEW LINES ---
+
+# Clean up apt caches to reduce image size
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to the default jenkins user for security
+USER jenkins
+
+# Set default shell if needed (often already set by base image)
+ENV SHELL=/bin/bash

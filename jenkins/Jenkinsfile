@@ -1,0 +1,106 @@
+pipeline {
+    // Keep the main agent as 'any'.
+    // This 'any' agent is expected to be your custom Jenkins agent pod
+    // that has Docker CLI, kubectl, and minikube installed, and
+    // /var/run/docker.sock mounted from the host.
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REPO = 'your-ecr-repo-url'
+        IMAGE_TAG = "sample-node-app:${env.BUILD_NUMBER}"
+        KUBECONFIG = "${env.HOME}/.kube/config" // Ensure minikube context is active
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh 'echo "Container started successfully!"'
+                sh 'ls k8s/' // Keep this to confirm files are there later
+            }
+        }
+
+        stage('Test') {
+            // This stage runs on the default 'any' agent, which has npm.
+            steps {
+                dir('app') {
+                    sh 'npm install'
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            // This stage needs Docker. It runs on the default 'any' agent,
+            // which is assumed to have Docker client and socket access.
+            steps {
+                script {
+                    echo "Building Docker image ${IMAGE_TAG}..."
+                    // docker.build implicitly uses the Docker client available to the agent
+                    docker.build("${IMAGE_TAG}", './app')
+                    echo "Docker image built."
+                }
+            }
+        }
+
+        // stage('Push to Local Minikube Registry') {
+        //     // This stage needs minikube CLI. It runs on the default 'any' agent.
+        //     steps {
+        //         script {
+        //             echo "Loading Docker image ${IMAGE_TAG} into minikube's Docker daemon."
+        //             sh "minikube image load ${IMAGE_TAG}"
+        //             echo "Simulated push of Docker image to local minikube registry."
+        //         }
+        //     }
+        // }
+
+        stage('Deploy to Minikube EKS Namespace') {
+            // This stage needs kubectl. It runs on the default 'any' agent.
+            steps {
+                script {
+                    echo "Deploying Kubernetes resources to minikube in 'sample-app' namespace."
+                    //sh 'kubectl config use minikube'
+                    sh 'kubectl create namespace sample-app --dry-run=client -o yaml | kubectl apply -f -'
+                    sh 'kubectl apply -f k8s/deployment.yaml -n sample-app'
+                    sh 'kubectl apply -f k8s/service.yaml -n sample-app'
+                    sh 'kubectl apply -f k8s/ingress.yaml -n sample-app'
+                    sh 'kubectl apply -f k8s/configmap.yaml -n sample-app'
+                    sh 'kubectl apply -f k8s/secret.yaml -n sample-app'
+
+                    echo "Simulated deploy to minikube EKS."
+                }
+            }
+        }
+
+        stage('Helm Deploy (Optional, for staging/production pipelines)') {
+            // This stage would need Helm CLI. It runs on the default 'any' agent.
+            steps {
+                script {
+                    echo "Simulating Helm deployment for staging/production environments."
+                    echo "Helm command would be: helm upgrade --install sample-node-app ./helm-chart -n jenkins --values ./helm-chart/values.yaml"
+                }
+            }
+        }
+
+        stage('Notify') {
+            steps {
+                echo 'Simulating Slack/email notification.'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed.'
+        }
+        failure {
+            echo 'Pipeline failed. Initiating rollback (if implemented).'
+        }
+    }
+}

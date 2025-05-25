@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-node-app-deployment
+  labels:
+    app: sample-node-app
+spec:
+  replicas: 1 # For minikube, 1 replica is sufficient
+  selector:
+    matchLabels:
+      app: sample-node-app
+  template:
+    metadata:
+      labels:
+        app: sample-node-app
+    spec:
+      containers:
+      - name: sample-node-app
+        image: sample-node-app:latest 
+        imagePullPolicy: Never # to use local image
+        ports:
+        - containerPort: 8000 # As defined in server.js
+        env:
+        - name: PORT
+          value: "8000"
+        - name: APP_MESSAGE
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app_message
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: api_key
+        readinessProbe: # Ensures the pod is ready to serve traffic
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe: # Ensures the application is running healthily
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      

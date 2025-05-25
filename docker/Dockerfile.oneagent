@@ -1,0 +1,103 @@
+# Dockerfile for a comprehensive Jenkins Agent
+# This agent will contain: Docker CLI, Kubectl, Minikube, Node.js/npm, yamllint, kubeval, and git.
+
+# Base the agent on the official Jenkins Inbound Agent image
+FROM jenkins/inbound-agent:latest
+
+# Set environment variables to prevent interactive prompts during apt installs
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Switch to root user for installations
+USER root
+
+# 1. Update package lists and install common dependencies
+#    - curl, gnupg, lsb-release, ca-certificates: For package sources and secure connections
+#    - build-essential: For compiling some Python packages if needed
+#    - git: Needed for checkout operations directly on the agent
+#    - jq: Often useful with Kubernetes tools
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gnupg \
+        lsb-release \
+        ca-certificates \
+        build-essential \
+        git \
+        jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Docker CLI
+#    These steps add the Docker official repository and install the CLI.
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli
+
+# 3. Install kubectl
+#    Downloads the stable kubectl binary and places it in /usr/local/bin.
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && rm kubectl
+
+# 4. Install Minikube CLI (assuming amd64 architecture)
+#    Downloads the latest minikube binary and places it in /usr/local/bin.
+RUN curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+    && install minikube-linux-amd64 /usr/local/bin/minikube \
+    && rm minikube-linux-amd64
+
+# 5. Install Node.js and npm (for your 'app' directory tests)
+#    Uses NodeSource to get a recent Node.js version.
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs
+
+# ... (previous lines) ...
+
+# 6. Install Python and pip (required for yamllint if not available via apt)
+#    Install the default python3 and python3-pip packages for Debian Bookworm.
+#    We are installing yamllint directly via apt in the next step.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 7. Install yamllint (and potentially kubeval if it becomes available via apt)
+#    Installing yamllint directly via apt as recommended by PEP 668.
+#    Note: kubeval is typically a standalone binary, so it remains installed via curl.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        yamllint \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# 8. Install kubeval
+#    Downloads the latest kubeval binary and places it in /usr/local/bin.
+RUN curl -LO https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz \
+    && tar -xzf kubeval-linux-amd64.tar.gz \
+    && mv kubeval /usr/local/bin/kubeval \
+    && rm kubeval-linux-amd64.tar.gz
+
+# Verify installations (optional, but good for debugging)
+RUN yamllint --version
+RUN kubeval --version
+
+# ... (rest of your Dockerfile) ...
+# 9. Configure Docker group permissions for the Jenkins user
+#    This is CRUCIAL for the Jenkins agent to interact with the Docker daemon on the host.
+#    You MUST replace `999` with the actual GID of the 'docker' group on your *Jenkins host machine*.
+#    To find this GID on your host, run: `getent group docker | cut -d: -f3`
+ARG DOCKER_GID=999 # Default placeholder. IMPORTANT: CHANGE THIS!
+RUN groupadd -g ${DOCKER_GID} docker || true \
+    && usermod -aG docker jenkins
+
+# Clean up apt caches to reduce image size
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to the default jenkins user for security
+USER jenkins
+
+# Set default shell
+ENV SHELL=/bin/bash
+
+# Define a working directory for consistency, although Jenkins typically sets its own workspace.
+WORKDIR /home/jenkins/agent

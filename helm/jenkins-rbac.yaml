@@ -1,0 +1,34 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jenkins-pipeline-admin
+rules:
+- apiGroups: [""] # "" indicates the core API group (pods, services, configmaps, secrets, namespaces etc.)
+  resources: ["namespaces"]
+  verbs: ["get", "create", "delete", "list", "watch", "update", "patch"] # Permissions to manage namespaces
+- apiGroups: [""] # Core API group
+  resources: ["pods", "services", "configmaps", "secrets", "serviceaccounts", "persistentvolumeclaims", "persistentvolumes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"] # API group for Deployments, StatefulSets, DaemonSets
+  resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"] # API group for Ingresses
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["rbac.authorization.k8s.io"] # For managing RBAC if needed, though less common for a basic app deployment
+  resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-pipeline-binding
+subjects:
+- kind: ServiceAccount
+  name: default # Name of the service account used by your Jenkins agent
+  namespace: jenkins # The namespace where your Jenkins agent (or controller if agent is in controller) is running
+roleRef:
+  kind: ClusterRole
+  name: jenkins-pipeline-admin # Name of the ClusterRole created above
+  apiGroup: rbac.authorization.k8s.io
