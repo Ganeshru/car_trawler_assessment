@@ -13,4 +13,3 @@ spec:
     - protocol: TCP
       port: 80   # Service port
       targetPort: 8000   # Container port
-
