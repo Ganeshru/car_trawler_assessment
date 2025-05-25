@@ -22,7 +22,7 @@ pipeline {
         stage('Lint') {
             steps {
                 sh 'echo "Container started successfully!"'
-                sh 'ls k8s/' // Keep this to confirm files are there later
+                sh 'yamllint k8s/' // Keep this to confirm files are there later
             }
         }
 
